@@ -69,6 +69,15 @@ AI-ассистент студента на базе Telegram-бота (Python 3
 - [x] Репозиторий склонирован в рабочую папку
 - [x] Заведены `CONTEXT.md` и `CHAT_HISTORY.md`
 - [x] Сформулированы и записаны условия labs в `docs/labs/`
+- [x] Правило: после коммита сразу `git push`
+- [x] GitHub Actions автодеплой: `.github/workflows/deploy.yml` (секреты `SSH_HOST`, `SSH_USER`, `SSH_KEY`)
+
+### Автодеплой (VPS)
+
+- Триггер: push в `main` или ручной `workflow_dispatch`.
+- На сервере нужен git-клон репозитория с `compose.yaml` в одном из путей: `~/uni-tg-bot`, `~/itmo_tg_bot`, `~/course-bot`, `/opt/uni-tg-bot`, `/opt/itmo_tg_bot`, `/home/student/course-bot`.
+- На сервере должны быть Docker + Compose v2 и файл `.env.cloud` (или `.env`) с секретами; workflow их не создаёт.
+- Деплой: `git fetch/reset origin/main` → `docker compose --profile cloud up -d --build --wait`.
 
 ## Полезные команды
 
