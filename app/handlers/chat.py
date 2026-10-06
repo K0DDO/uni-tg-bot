@@ -1,5 +1,6 @@
 from aiogram import F, Router
 from aiogram.enums import ChatAction
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message
 from asyncpg import Pool
 
@@ -13,7 +14,7 @@ from app.llm.client import (
 )
 from app.llm.prompts import system_prompt_for
 from app.services.history import HistoryService
-from app.services.messaging import split_telegram_text
+from app.services.messaging import prepare_telegram_parts, strip_markdown
 from app.services.users import UserService
 
 router = Router(name="chat")
@@ -26,6 +27,24 @@ USER_ERROR_UNAVAILABLE = (
 )
 USER_ERROR_EMPTY = "Модель вернула пустой ответ. Переформулируйте запрос или попробуйте снова."
 USER_ERROR_GENERIC = "Не удалось обработать запрос. Попробуйте позже."
+
+
+async def _send_answer_parts(status: Message, message: Message, answer: str) -> None:
+    parts = prepare_telegram_parts(answer)
+    if not parts:
+        await status.edit_text(USER_ERROR_EMPTY, parse_mode=None)
+        return
+    first_text, first_mode = parts[0]
+    try:
+        await status.edit_text(first_text, parse_mode=first_mode)
+    except TelegramBadRequest:
+        await status.edit_text(strip_markdown(answer)[:4096], parse_mode=None)
+        return
+    for part_text, part_mode in parts[1:]:
+        try:
+            await message.answer(part_text, parse_mode=part_mode)
+        except TelegramBadRequest:
+            await message.answer(strip_markdown(part_text), parse_mode=None)
 
 
 @router.message(F.chat.type == "private", F.text)
@@ -81,12 +100,4 @@ async def handle_private_text(
         return
 
     await history.add_message(message.chat.id, "assistant", answer)
-
-    parts = split_telegram_text(answer)
-    if not parts:
-        await status.edit_text(USER_ERROR_EMPTY, parse_mode=None)
-        return
-
-    await status.edit_text(parts[0], parse_mode=None)
-    for part in parts[1:]:
-        await message.answer(part, parse_mode=None)
+    await _send_answer_parts(status, message, answer)

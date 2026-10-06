@@ -16,7 +16,11 @@ from app.handlers.commands import (
 from app.llm.client import LLMUnavailableError
 from app.llm.prompts import STUDY_PROMPT, system_prompt_for
 from app.services.history import HistoryMessage, HistoryService, trim_history
-from app.services.messaging import split_telegram_text
+from app.services.messaging import (
+    markdown_to_telegram_html,
+    prepare_telegram_parts,
+    split_telegram_text,
+)
 from app.services.users import UserSettings, parse_temperature
 
 TOKEN = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk"
@@ -236,6 +240,22 @@ def test_long_answer_is_split_without_loss():
     assert len(parts) == 2
 
 
+def test_markdown_converted_to_telegram_html():
+    # Arrange
+    raw = "**Пояснение:**\n1. **Классы** — шаблоны\n```python\nclass Dog:\n    pass\n```"
+    # Act
+    html_text = markdown_to_telegram_html(raw)
+    # Assert
+    assert "<b>Пояснение:</b>" in html_text
+    assert "<b>Классы</b>" in html_text
+    assert "<pre>" in html_text
+    assert "class Dog:" in html_text
+    assert "**" not in html_text
+    assert "```" not in html_text
+    parts = prepare_telegram_parts(raw)
+    assert parts == [(html_text, "HTML")]
+
+
 async def test_private_text_calls_llm_with_active_mode_prompt():
     # Arrange
     message = private_message(chat_id=9, text="Что такое список?")
@@ -271,7 +291,11 @@ async def test_private_text_calls_llm_with_active_mode_prompt():
     assert kwargs["temperature"] == 0.3
     assert kwargs["user_text"] == "Что такое список?"
     assert kwargs["history"][0]["role"] == "user"
-    status_message.edit_text.assert_awaited_once_with("Краткое объяснение", parse_mode=None)
+    status_message.edit_text.assert_awaited_once()
+    assert status_message.edit_text.await_args.args[0] == markdown_to_telegram_html(
+        "Краткое объяснение"
+    )
+    assert status_message.edit_text.await_args.kwargs["parse_mode"] == "HTML"
 
 
 async def test_temperature_callback_saves_value():
@@ -293,7 +317,7 @@ async def test_temperature_callback_saves_value():
 
 
 async def test_dispatcher_sends_split_parts_in_order():
-    # Arrange: ответ длиннее 4096
+    # Arrange: ответ длиннее 4096 — уходит как plain text без HTML
     long_text = "x" * 5000
     settings = make_settings()
     llm = AsyncMock()
@@ -307,14 +331,14 @@ async def test_dispatcher_sends_split_parts_in_order():
     history.add_message = AsyncMock()
 
     message = private_message(chat_id=42, text="Тема: циклы")
-    sent: list[str] = []
+    sent: list[tuple[str, str | None]] = []
 
     async def fake_answer(text, **kwargs):
-        sent.append(text)
+        sent.append((text, kwargs.get("parse_mode")))
         status = MagicMock()
 
         async def edit_text(new_text, **kw):
-            sent[0] = new_text
+            sent[0] = (new_text, kw.get("parse_mode"))
 
         status.edit_text = edit_text
         return status
@@ -327,6 +351,6 @@ async def test_dispatcher_sends_split_parts_in_order():
     ):
         await handle_private_text(message, object(), settings, llm)  # type: ignore[arg-type]
 
-    assert sent[0] == long_text[:4096]
-    assert sent[1] == long_text[4096:]
-    assert "".join(sent) == long_text
+    assert sent[0][0] == long_text[:4096]
+    assert sent[1][0] == long_text[4096:]
+    assert "".join(part for part, _ in sent) == long_text
