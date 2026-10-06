@@ -46,7 +46,7 @@ AI-ассистент студента на базе Telegram-бота (Python 3
 - [x] История диалога в PostgreSQL с лимитами по числу и объёму
 - [x] Обработка ошибок LLM и разбиение длинных ответов (>4096)
 - [x] Автотесты обязательных сценариев
-- [ ] Эксперимент с temperature (12 запусков) + отчёт
+- [ ] Эксперимент с temperature (12 запусков) + отчёт — протокол в `docs/labs/lab1-checklist-and-experiment.md`
 
 ### Lab 2
 - [ ] Собственный MCP-сервер: `get_weather`, `get_schedule`, `add_reminder` + ресурс `schedule://current-week`
