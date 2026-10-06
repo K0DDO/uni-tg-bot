@@ -14,58 +14,10 @@ jobs:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     steps:
-      - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Add host to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-
       - name: Deploy over SSH
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-        run: |
-          set -euo pipefail
-          ssh -o StrictHostKeyChecking=yes "${SSH_USER}@${SSH_HOST}" bash -s <<'REMOTE'
-          set -euo pipefail
-
-          APP_DIR=""
-          for candidate in \
-            "${HOME}/uni-tg-bot" \
-            "${HOME}/itmo_tg_bot" \
-            "${HOME}/course-bot" \
-            "/opt/uni-tg-bot" \
-            "/opt/itmo_tg_bot" \
-            "/home/student/course-bot"
-          do
-            if [[ -d "${candidate}" && -f "${candidate}/compose.yaml" ]]; then
-              APP_DIR="${candidate}"
-              break
-            fi
-          done
-          if [[ -z "${APP_DIR}" ]]; then
-            echo "App install not found (tried ~/uni-tg-bot, ~/itmo_tg_bot, ~/course-bot, /opt/uni-tg-bot, /opt/itmo_tg_bot, /home/student/course-bot)" >&2
-            exit 1
-          fi
-
-          cd "${APP_DIR}"
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
-
-          if [[ -f .env.cloud ]]; then
-            ENV_FILE=".env.cloud"
-          elif [[ -f .env ]]; then
-            ENV_FILE=".env"
-          else
-            echo "Neither .env.cloud nor .env found in ${APP_DIR}" >&2
-            exit 1
-          fi
-
-          docker compose --env-file "${ENV_FILE}" --profile cloud up -d --build --wait --wait-timeout 180
-          docker compose --env-file "${ENV_FILE}" --profile cloud ps
-          REMOTE
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: deploy
