@@ -99,6 +99,12 @@ bash scripts/start.sh --setup-only
 | `POSTGRES_PASSWORD`  | Пароль БД                                              | Скрипт генерирует при первоначальной настройке           |
 | `LOG_LEVEL`          | Подробность логов                                      | `INFO`; доступны `DEBUG`, `WARNING`, `ERROR`, `CRITICAL` |
 | `HEALTH_PORT`        | Локальный служебный HTTP-порт                          | `8080`                                                   |
+| `OPENROUTER_API_KEY` | Ключ доступа к OpenRouter API                          | Обязательно                                              |
+| `OPENROUTER_BASE_URL`| Базовый URL OpenAI-совместимого API                    | `https://openrouter.ai/api/v1`                           |
+| `OPENROUTER_MODEL`   | Имя модели на OpenRouter                               | `openai/gpt-4o-mini`                                     |
+| `LLM_TIMEOUT_SECONDS`| Таймаут запроса к модели                               | `60`                                                     |
+| `HISTORY_MAX_MESSAGES` | Максимум сообщений истории в запросе к модели        | `20`                                                     |
+| `HISTORY_MAX_CHARS`  | Максимум символов истории в запросе к модели           | `12000`                                                  |
 
 Примеры прокси с вымышленными адресами:
 

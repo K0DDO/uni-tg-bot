@@ -35,6 +35,11 @@ def prepare_env(
         "POSTGRES_USER": "bot",
         "LOG_LEVEL": "INFO",
         "HEALTH_PORT": "8080",
+        "OPENROUTER_BASE_URL": "https://openrouter.ai/api/v1",
+        "OPENROUTER_MODEL": "openai/gpt-4o-mini",
+        "LLM_TIMEOUT_SECONDS": "60",
+        "HISTORY_MAX_MESSAGES": "20",
+        "HISTORY_MAX_CHARS": "12000",
     }
     for key, default in defaults.items():
         if not values.get(key):
@@ -43,6 +48,8 @@ def prepare_env(
         updates["BOT_TOKEN"] = ask("Токен бота из BotFather (ввод скрыт): ").strip()
     if not values.get("POSTGRES_PASSWORD"):
         updates["POSTGRES_PASSWORD"] = secrets.token_urlsafe(24)
+    if not values.get("OPENROUTER_API_KEY"):
+        updates["OPENROUTER_API_KEY"] = ask("Ключ OpenRouter API (ввод скрыт): ").strip()
     if "TELEGRAM_PROXY_URL" not in values or (cloud and not values.get("TELEGRAM_PROXY_URL")):
         updates["TELEGRAM_PROXY_URL"] = ask(
             "URL HTTP/SOCKS5 прокси (ввод скрыт; локально Enter — без прокси): "

@@ -14,6 +14,11 @@ class ConfigError(ValueError):
     """Ошибка настройки без секретных значений в сообщении."""
 
 
+ALLOWED_TEMPERATURES = (0.0, 0.3, 0.7, 1.0)
+DEFAULT_MODE = "study"
+MODES = ("study", "translate", "exam")
+
+
 @dataclass(frozen=True)
 class Settings:
     bot_token: str = field(repr=False)
@@ -25,6 +30,12 @@ class Settings:
     postgres_user: str = "bot"
     log_level: str = "INFO"
     health_port: int = 8080
+    openrouter_api_key: str = field(default="", repr=False)
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model: str = "openai/gpt-4o-mini"
+    llm_timeout_seconds: float = 60.0
+    history_max_messages: int = 20
+    history_max_chars: int = 12_000
 
     @classmethod
     def load(
@@ -47,6 +58,24 @@ class Settings:
             except ValueError:
                 raise ConfigError(f"{key}: нужен номер порта от 1 до 65535.") from None
 
+        def positive_int(key: str, default: str) -> int:
+            try:
+                result = int(value(key, default))
+                if result < 1:
+                    raise ValueError
+                return result
+            except ValueError:
+                raise ConfigError(f"{key}: нужно целое число не меньше 1.") from None
+
+        def positive_float(key: str, default: str) -> float:
+            try:
+                result = float(value(key, default))
+                if result <= 0:
+                    raise ValueError
+                return result
+            except ValueError:
+                raise ConfigError(f"{key}: нужно положительное число.") from None
+
         token = value("BOT_TOKEN")
         try:
             validate_token(token)
@@ -55,6 +84,9 @@ class Settings:
         password = value("POSTGRES_PASSWORD")
         if not password:
             raise ConfigError("POSTGRES_PASSWORD: пароль базы данных не задан.")
+        openrouter_api_key = value("OPENROUTER_API_KEY")
+        if not openrouter_api_key:
+            raise ConfigError("OPENROUTER_API_KEY: укажите ключ доступа OpenRouter.")
         proxy = value("TELEGRAM_PROXY_URL")
         if proxy:
             try:
@@ -76,6 +108,12 @@ class Settings:
         level = value("LOG_LEVEL", "INFO").upper()
         if level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
             raise ConfigError("LOG_LEVEL: используйте DEBUG, INFO, WARNING, ERROR или CRITICAL.")
+        base_url = value("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+        if not base_url.startswith(("http://", "https://")):
+            raise ConfigError("OPENROUTER_BASE_URL: нужен http:// или https:// URL.")
+        model = value("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+        if not model:
+            raise ConfigError("OPENROUTER_MODEL: укажите имя модели OpenRouter.")
         return cls(
             bot_token=token,
             postgres_password=password,
@@ -86,4 +124,10 @@ class Settings:
             postgres_user=value("POSTGRES_USER", "bot"),
             log_level=level,
             health_port=port("HEALTH_PORT", "8080"),
+            openrouter_api_key=openrouter_api_key,
+            openrouter_base_url=base_url,
+            openrouter_model=model,
+            llm_timeout_seconds=positive_float("LLM_TIMEOUT_SECONDS", "60"),
+            history_max_messages=positive_int("HISTORY_MAX_MESSAGES", "20"),
+            history_max_chars=positive_int("HISTORY_MAX_CHARS", "12000"),
         )
