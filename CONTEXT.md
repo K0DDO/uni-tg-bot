@@ -31,21 +31,21 @@ AI-ассистент студента на базе Telegram-бота (Python 3
 
 ## Текущее состояние репозитория
 
-- Стартовый **echo-бот**: long polling, ответ тем же текстом.
-- PostgreSQL через asyncpg (проверка `SELECT 1`), учебных таблиц нет.
-- Docker Compose для локальной БД и облачного деплоя (Yandex Cloud).
-- Тесты обвязки, ruff, скрипты `scripts/start.*` / `scripts/deploy.*`.
-- Функциональность лабораторных **ещё не реализована**.
+- Telegram-бот Lab 1: режимы `/study`, `/translate`, `/exam`, история в PostgreSQL, OpenRouter LLM.
+- Команды `/start`, `/settings`, `/reset`; разбиение длинных ответов; безопасные ошибки LLM.
+- PostgreSQL через asyncpg + схема `user_settings` / `dialog_messages`.
+- Docker Compose для локальной БД и облачного деплоя; GitHub Actions SSH-деплой.
+- Автотесты Lab 1 и обвязки шаблона.
 
 ## Фичи (план)
 
 ### Lab 1
-- [ ] LLM-клиент (OpenAI-совместимый API)
-- [ ] Режимы `/study`, `/translate`, свой режим + системные промпты (один с few-shot)
-- [ ] `/start`, `/settings` (temperature), `/reset`
-- [ ] История диалога в PostgreSQL с лимитами по числу и объёму
-- [ ] Обработка ошибок LLM и разбиение длинных ответов (>4096)
-- [ ] Автотесты обязательных сценариев
+- [x] LLM-клиент (OpenRouter, OpenAI-совместимый API)
+- [x] Режимы `/study`, `/translate`, `/exam` + системные промпты (`/translate` с few-shot)
+- [x] `/start`, `/settings` (temperature), `/reset`
+- [x] История диалога в PostgreSQL с лимитами по числу и объёму
+- [x] Обработка ошибок LLM и разбиение длинных ответов (>4096)
+- [x] Автотесты обязательных сценариев
 - [ ] Эксперимент с temperature (12 запусков) + отчёт
 
 ### Lab 2
@@ -71,6 +71,7 @@ AI-ассистент студента на базе Telegram-бота (Python 3
 - [x] Сформулированы и записаны условия labs в `docs/labs/`
 - [x] Правило: после коммита сразу `git push`
 - [x] GitHub Actions автодеплой: `.github/workflows/deploy.yml` (секреты `SSH_HOST`, `SSH_USER`, `SSH_KEY`)
+- [x] Lab 1: OpenRouter, режимы study/translate/exam, история, settings/reset, тесты
 
 ### Автодеплой (VPS)
 
