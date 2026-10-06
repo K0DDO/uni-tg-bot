@@ -19,7 +19,10 @@ def test_local_and_cloud_compose_ports_credentials_and_healthchecks(tmp_path):
     password = "p$a#s's\\\\tail"
     env_file = tmp_path / ".env"
     env_file.write_text(
-        "BOT_TOKEN=test\nPOSTGRES_PORT=55432\nPOSTGRES_PASSWORD=" + compose_quote(password) + "\n",
+        "BOT_TOKEN=test\n"
+        "OPENROUTER_API_KEY=test-key\n"
+        "POSTGRES_PORT=55432\n"
+        "POSTGRES_PASSWORD=" + compose_quote(password) + "\n",
         encoding="utf-8",
     )
     environ = {

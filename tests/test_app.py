@@ -20,7 +20,12 @@ TOKEN = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk"
 @pytest.fixture
 def settings(tmp_path):
     path = tmp_path / ".env"
-    path.write_text(f"BOT_TOKEN={TOKEN}\nPOSTGRES_PASSWORD=secret-db\n", encoding="utf-8")
+    path.write_text(
+        "BOT_TOKEN=123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk\n"
+        "POSTGRES_PASSWORD=secret-db\n"
+        "OPENROUTER_API_KEY=test-openrouter-key\n",
+        encoding="utf-8",
+    )
     return Settings.load(path, environ={})
 
 
@@ -79,7 +84,7 @@ def test_settings_environment_overrides_file(tmp_path):
         f"BOT_TOKEN={TOKEN}\nPOSTGRES_PASSWORD='p$a#ss'\nPOSTGRES_PORT=5432\n", encoding="utf-8"
     )
     # Act
-    config = Settings.load(path, environ={"POSTGRES_PORT": "55432"})
+    config = Settings.load(path, environ={"POSTGRES_PORT": "55432", "OPENROUTER_API_KEY": "k"})
     # Assert
     assert config.postgres_port == 55432
     assert config.postgres_password == "p$a#ss"
@@ -95,7 +100,12 @@ def test_invalid_port_has_safe_error(tmp_path, value):
     with pytest.raises(ConfigError, match="POSTGRES_PORT"):
         Settings.load(
             path,
-            environ={"BOT_TOKEN": TOKEN, "POSTGRES_PASSWORD": "secret", "POSTGRES_PORT": value},
+            environ={
+                "BOT_TOKEN": TOKEN,
+                "POSTGRES_PASSWORD": "secret",
+                "OPENROUTER_API_KEY": "k",
+                "POSTGRES_PORT": value,
+            },
         )
 
 
@@ -119,7 +129,12 @@ def test_bad_proxy_does_not_leak_credentials(tmp_path):
     with pytest.raises(ConfigError) as exc:
         Settings.load(
             tmp_path / ".env",
-            environ={"BOT_TOKEN": TOKEN, "POSTGRES_PASSWORD": "db", "TELEGRAM_PROXY_URL": proxy},
+            environ={
+                "BOT_TOKEN": TOKEN,
+                "POSTGRES_PASSWORD": "db",
+                "OPENROUTER_API_KEY": "k",
+                "TELEGRAM_PROXY_URL": proxy,
+            },
         )
     assert "TELEGRAM_PROXY_URL" in str(exc.value)
     assert "very-secret" not in str(exc.value)
